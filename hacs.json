@@ -1,5 +1,5 @@
 {
   "name": "Water Babies",
-  "country": "GB",
+  "country": ["GB"],
   "render_readme": true
 }
