@@ -1,4 +1,4 @@
-# ![Logo](https://github.com/jampez77/WaterBabies/blob/main/logo.png "Water Babies Logo") Water Babies swimming lessons for Home Assistant
+## ![Logo](https://github.com/jampez77/WaterBabies/blob/main/logo.png "Water Babies Logo") Water Babies swimming lessons for Home Assistant
 
 This integration synchronises your data from Water Babies adds calendar entries to [Home Assistant](https://www.home-assistant.io/) which can be used in your own automations.
 
