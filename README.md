@@ -35,7 +35,7 @@ Use this route only if you do not want to use [HACS](https://hacs.xyz/) and love
 
 ---
 ## Data 
-This integration creates a sensor for your next milkround delivery date as well as information on number of milk bottles and wheelie bins saved. In addition you can add upcoming milkrounds to a calendar.
+This integration creates a calendar for upcoming swimming lessons for each child on the account for the next calendar month.
 
 ## Contributing
 
