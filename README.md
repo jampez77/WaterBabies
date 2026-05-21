@@ -9,11 +9,9 @@ This integration synchronises your data from Water Babies adds calendar entries 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
 ![Project Maintenance][maintenance-shield]
 
-
 Enjoying this? Help me out with a :beers: or :coffee:!
 
 [![coffee](https://www.buymeacoffee.com/assets/img/custom_images/black_img.png)](https://www.buymeacoffee.com/whenitworks)
-
 
 ## Installation through [HACS](https://hacs.xyz/)
 
@@ -21,7 +19,7 @@ There is an active [PR](https://github.com/hacs/default/pull/7653) to get this i
 
 Until then you will have to add this repository manually:
 
-Go to HACS -> 3 dot menu -> Custom Repositories:- 
+Go to HACS -> 3 dot menu -> Custom Repositories:-
 
 Paste `https://github.com/jampez77/WaterBabies` into Repository field and select `Integration`
 
@@ -30,12 +28,16 @@ Now you should be able to find it in HACS as normal.
 You can install the **Water Babies** integration by searching for it there in HA instance.
 
 ## Manual Installation
+
 Use this route only if you do not want to use [HACS](https://hacs.xyz/) and love the pain of manually installing regular updates.
-* Add the `water_babies` folder in your `custom_components` folder
+
+- Add the `water_babies` folder in your `custom_components` folder
 
 ---
-## Data 
-This integration creates a calendar for upcoming swimming lessons for each child on the account for the next calendar month.
+
+## Data
+
+This integration creates a calendar for upcoming swimming lessons for each child on the account for the next 3 calendar months.
 
 ## Contributing
 
@@ -50,7 +52,6 @@ Contirbutions are welcome from everyone! By contributing to this project, you he
    - Make your changes in the new branch.
    - Open a pull request with a clear description of what you’ve done.
 
-
 ---
 
 [commits-shield]: https://img.shields.io/github/commit-activity/y/jampez77/WaterBabies.svg?style=for-the-badge
@@ -58,4 +59,4 @@ Contirbutions are welcome from everyone! By contributing to this project, you he
 [license-shield]: https://img.shields.io/github/license/jampez77/WaterBabies.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/badge/Maintainer-Jamie%20Nandhra--Pezone-blue
 [releases-shield]: https://img.shields.io/github/v/release/jampez77/WaterBabies.svg?style=for-the-badge
-[releases]: https://github.com/jampez77/WaterBabies/releases 
+[releases]: https://github.com/jampez77/WaterBabies/releases
