@@ -12,13 +12,15 @@ from homeassistant.helpers.update_coordinator import (
 )
 from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
 
+from requests.exceptions import RequestException
+
 from .water_babies_api import WaterBabiesAPI
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS = ["calendar"]
-SCAN_INTERVAL = timedelta(hours=1)
+SCAN_INTERVAL = timedelta(days=1)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -37,7 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         """
         try:
             return await api.async_get_all_lessons()
-        except RuntimeError as err:
+        except (RuntimeError, RequestException) as err:
             if "Login appears to have failed" in str(err):
                 raise ConfigEntryAuthFailed from err
             raise UpdateFailed(f"Error communicating with API: {err}") from err
@@ -45,6 +47,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
+        config_entry=entry,
         name="Water Babies",
         update_method=async_update_data,
         update_interval=SCAN_INTERVAL,

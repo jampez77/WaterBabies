@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant
 _LOGGER = logging.getLogger(__name__)
 
 BASE_URL = "https://my.waterbabies.co.uk"
+MONTHS_TO_FETCH = 3
 
 
 class WaterBabiesAPI:
@@ -154,7 +155,7 @@ class WaterBabiesAPI:
         return all_lessons
 
     async def async_get_baby_details(self, baby_id):
-        """Call babyDetailsAjax and parse lessons."""
+        """Get lessons across multiple months."""
         url = (
             f"{BASE_URL}"
             "/member/courses/babyDetailsAjax"
@@ -193,10 +194,13 @@ class WaterBabiesAPI:
         response.raise_for_status()
 
         data = response.json()
-        html = data["html"]
+        
+        # Update CSRF token if a new one is provided in JSON
+        if "csrf_token" in data:
+            self._csrf_token = data["csrf_token"]
 
         soup = BeautifulSoup(
-            html,
+            data["html"],
             "html.parser"
         )
 
@@ -262,7 +266,125 @@ class WaterBabiesAPI:
             )
         )
 
-        # ---- Month/year ----
+        # ---- Venue ----
+
+        venue_lines = soup.select(
+            ".address li"
+        )
+
+        venue_parts = []
+        for line in venue_lines:
+            text = line.get_text(strip=True).strip(",")
+            if text:
+                venue_parts.append(text)
+
+        venue = ", ".join(venue_parts)
+
+        metadata = {
+            "child_name": child_name,
+            "start_time": start_time,
+            "end_time": end_time,
+            "venue": venue,
+        }
+
+        all_lessons = []
+        all_lessons.extend(
+            self._parse_calendar_rows(
+                soup,
+                metadata,
+            )
+        )
+
+        next_button = soup.select_one('a.get_data[data-type="next"]')
+
+        for _ in range(MONTHS_TO_FETCH - 1):
+            if not next_button:
+                break
+
+            payload = {
+                "start_date": next_button.get("data-start_date"),
+                "get_month": next_button.get("data-get_month"),
+                "type": "next",
+                "timetable": next_button.get("data-timetable"),
+                "baby": next_button.get("data-baby"),
+                "class": next_button.get("data-class")
+            }
+
+            cal_url = (
+                f"{BASE_URL}"
+                "/member/courses/babyCalendarDetailsAjax"
+            )
+
+            _LOGGER.debug("Fetching next month: %s", payload)
+
+            response = await self._hass.async_add_executor_job(
+                lambda: self._session.post(
+                    cal_url,
+                    data=payload,
+                    headers={
+                        "X-Csrf-Token": self._csrf_token,
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Referer": f"{BASE_URL}/member/courses",
+                        "Origin": BASE_URL,
+                    },
+                )
+            )
+            response.raise_for_status()
+
+            data = response.json()
+            
+            # Update CSRF token if a new one is provided
+            if "csrf_token" in data:
+                self._csrf_token = data["csrf_token"]
+
+            soup = BeautifulSoup(
+                data["html"],
+                "html.parser",
+            )
+
+            all_lessons.extend(
+                self._parse_calendar_rows(
+                    soup,
+                    metadata,
+                )
+            )
+
+            next_button = soup.select_one('a.get_data[data-type="next"]')
+
+        _LOGGER.debug(
+            "Found %s lessons for %s",
+            len(all_lessons),
+            child_name
+        )
+
+        return all_lessons
+
+    def _parse_schedule_time(self, schedule_text):
+        """
+        Example:
+        Sunday 2:00 PM - 2:30 PM
+        """
+
+        match = re.search(
+            r"(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)",
+            schedule_text,
+            re.IGNORECASE,
+        )
+
+        if not match:
+            raise RuntimeError(
+                f"Could not parse lesson time: {schedule_text}"
+            )
+
+        start = match.group(1)
+        end = match.group(2)
+
+        return start, end
+
+    def _parse_calendar_rows(self, soup, metadata):
+        """Parse lesson rows."""
+
+        lessons = []
 
         month_heading = soup.find(
             "span",
@@ -272,9 +394,7 @@ class WaterBabiesAPI:
         )
 
         if not month_heading:
-            raise RuntimeError(
-                "Could not determine month"
-            )
+            return lessons
 
         heading_text = (
             month_heading.get_text(
@@ -288,21 +408,6 @@ class WaterBabiesAPI:
         )
 
         year = month_date.year
-
-        # ---- Venue ----
-
-        venue_lines = soup.select(
-            ".address li"
-        )
-
-        venue = ", ".join(
-            line.get_text(strip=True)
-            for line in venue_lines
-        )
-
-        # ---- Lessons ----
-
-        lessons = []
 
         rows = soup.select(
             ".lesson-list table tr"
@@ -352,53 +457,25 @@ class WaterBabiesAPI:
             )
 
             start_dt = datetime.strptime(
-                f"{lesson_date.date()} {start_time}",
+                f"{lesson_date.date()} {metadata['start_time']}",
                 "%Y-%m-%d %I:%M %p",
             )
 
             end_dt = datetime.strptime(
-                f"{lesson_date.date()} {end_time}",
+                f"{lesson_date.date()} {metadata['end_time']}",
                 "%Y-%m-%d %I:%M %p",
             )
 
             lessons.append({
                 "child_name":
-                    child_name,
+                    metadata["child_name"],
                 "title": title,
                 "start":
                     start_dt.isoformat(),
                 "end":
                     end_dt.isoformat(),
                 "location":
-                    venue,
+                    metadata["venue"],
             })
 
-        _LOGGER.debug(
-            "Found %s lessons for %s",
-            len(lessons),
-            child_name
-        )
-
         return lessons
-
-    def _parse_schedule_time(self, schedule_text):
-        """
-        Example:
-        Sunday 2:00 PM - 2:30 PM
-        """
-
-        match = re.search(
-            r"(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)",
-            schedule_text,
-            re.IGNORECASE,
-        )
-
-        if not match:
-            raise RuntimeError(
-                f"Could not parse lesson time: {schedule_text}"
-            )
-
-        start = match.group(1)
-        end = match.group(2)
-
-        return start, end
