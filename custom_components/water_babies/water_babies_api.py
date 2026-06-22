@@ -61,11 +61,25 @@ class WaterBabiesAPI:
 
     async def async_login(self):
         """Authenticate."""
+        try:
+            await self._async_login_once()
+        except RuntimeError as err:
+            if "Login appears to have failed" not in str(err):
+                raise
+
+            _LOGGER.warning(
+                "Login appeared to fail. Retrying once with a fresh session..."
+            )
+
+            self._reset_session()
+            await self._async_login_once()
+
+    async def _async_login_once(self):
+        """Authenticate once."""
         if not self._csrf_token:
             await self.async_get_csrf_token()
 
         url = f"{BASE_URL}/member/member/login/"
-        _LOGGER.debug("Attempting to log in")
 
         payload = {
             "member_username": self._username,
@@ -86,14 +100,24 @@ class WaterBabiesAPI:
         )
         response.raise_for_status()
 
-        # crude login validation
         if "member_username" in response.text:
-            _LOGGER.debug("Login failed - Response: %s", response)
-            raise RuntimeError(
-                "Login appears to have failed. Check credentials."
-            )
+            raise RuntimeError("Login appears to have failed.")
 
         _LOGGER.info("Logged in successfully")
+
+
+    def _reset_session(self):
+        """Reset session and CSRF token."""
+        self._session = requests.Session()
+        self._csrf_token = None
+
+        self._session.headers.update({
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/147.0.0.0 Safari/537.36"
+            )
+        })
 
     async def async_get_baby_ids(self):
         """Load member courses page and extract baby IDs."""
