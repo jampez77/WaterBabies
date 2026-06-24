@@ -1,5 +1,4 @@
 """Water Babies API for Home Assistant."""
-import json
 import re
 from datetime import datetime
 import logging
@@ -68,7 +67,7 @@ class WaterBabiesAPI:
                 raise
 
             _LOGGER.warning(
-                "Login appeared to fail. Retrying once with a fresh session..."
+                "Login appeared to fail. Retrying once with a fresh session"
             )
 
             self._reset_session()
@@ -138,7 +137,7 @@ class WaterBabiesAPI:
                 allow_redirects=True,
             )
         )
-        
+
         response.raise_for_status()
 
         soup = BeautifulSoup(
@@ -218,7 +217,7 @@ class WaterBabiesAPI:
         response.raise_for_status()
 
         data = response.json()
-        
+
         # Update CSRF token if a new one is provided in JSON
         if "csrf_token" in data:
             self._csrf_token = data["csrf_token"]
@@ -356,7 +355,7 @@ class WaterBabiesAPI:
             response.raise_for_status()
 
             data = response.json()
-            
+
             # Update CSRF token if a new one is provided
             if "csrf_token" in data:
                 self._csrf_token = data["csrf_token"]
